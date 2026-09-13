@@ -111,7 +111,43 @@ timestamp,agent_id,job_type,prompt_tokens,completion_tokens,total_tokens
 2026-09-13T10:58:38.819Z,agent-42,translate,12,3,15
 ```
 
-`GET /health` returns `200 {"status":"ok"}`.
+### Check status
+
+The proxy exposes a `/health` endpoint that returns HTTP `200` with a small
+JSON body when the server is up. Query it with:
+
+```powershell
+Invoke-RestMethod -Uri http://localhost:8080/health -Method Get
+```
+
+Example response:
+
+```
+status
+------
+ok
+```
+
+A non-2xx response (or a connection error) means the proxy is not running —
+check that `npm run dev` / `npm start` is active and that `config.json` binds
+`listen.port` to `8080` (or adjust the URL accordingly).
+
+### Quick test
+
+With the proxy running and `config.json` pointed at a working upstream, send a
+chat completion with the attribution headers and a model the upstream serves:
+
+```powershell
+Invoke-RestMethod -Uri http://localhost:8080/v1/chat/completions -Method Post ` -Headers @{ "X-Agent-Id" = "demo-agent"; "X-Job-Type" = "test"; "Content-Type" = "application/json" } ` -Body '{"model":"gpt-5-mini","messages":[{"role":"user","content":"Say hello in one word."}]}'
+```
+
+The proxy forwards the request, returns the upstream response unchanged, and
+appends one row to `logs/usage.csv` with the attribution headers and the token
+counts from the upstream `usage` object:
+
+```
+2026-09-13T11:26:45.636Z,demo-agent,test,12,75,87
+```
 
 ### Run in Docker
 

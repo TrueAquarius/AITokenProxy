@@ -16,9 +16,9 @@ requirements change.
 
 ## Current state
 
-- The proxy implementation is **not yet built**. There is no `src/`, no
-  `package.json`, no `Dockerfile` yet.
-- Requirements have been gathered and captured in `docs/requirements.md`.
+- The v1 proxy is **implemented** in `src/` (Node.js + TypeScript) with a
+  `package.json`, `tsconfig.json`, and `Dockerfile`.
+- Requirements are captured in `docs/requirements.md`.
 - opencode is configured via `opencode.json`; skills live under
   `.agents/skills/`.
 
@@ -60,8 +60,18 @@ requirements change.
 
 ## Useful commands
 
-> To be filled in once the implementation exists (e.g. `npm run dev`,
-> `npm run build`, `docker build`, `docker run`).
+- `npm install` — install dependencies.
+- `npm run dev` — run via `tsx watch` (auto-restart on code changes). Reads
+  `config.json` (or `CONFIG_PATH`).
+- `npm run build` — compile TypeScript to `dist/`.
+- `npm start` — run the compiled proxy (`node dist/index.js`).
+- `docker build -t ai-token-proxy .` — build the container image.
+- `docker run -p 8080:8080 -v $PWD/config.json:/app/config.json:ro ai-token-proxy`
+  — run the container.
+
+Config is loaded from `config.json` by default, or from the path in
+`CONFIG_PATH`. Secrets are referenced as `${ENV_VAR}` in the config and
+resolved from the environment. The config is hot-reloaded on file change.
 
 ## opencode
 

@@ -1,0 +1,15 @@
+{
+  "listen": { "host": "0.0.0.0", "port": 8080 },
+  "upstream": "https://api.openai.com",
+  "upstreamApiKey": "${OPENAI_API_KEY}",
+  "attributionHeaders": {
+    "agent_id": "X-Agent-Id",
+    "job_type": "X-Job-Type"
+  },
+  "log": {
+    "filePath": "logs/usage.csv"
+  },
+  "tokenizer": {
+    "model": "gpt-4o"
+  }
+}

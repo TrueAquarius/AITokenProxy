@@ -6,7 +6,7 @@ logging per-request token consumption with attribution metadata (Agent ID,
 Job Type, etc.) so the organization can analyze which agents use how many
 tokens for what purpose.
 
-> **Status:** v1 (prototype). The proxy implementation is not yet built.
+> **Status:** v1 (prototype). The proxy is implemented and logs to a CSV file.
 > Requirements are captured in [`docs/requirements.md`](docs/requirements.md).
 
 ## Why
@@ -62,20 +62,89 @@ See [`docs/requirements.md`](docs/requirements.md) for the full specification.
 
 ## Getting started
 
-> The proxy is not yet implemented. Once built, this section will cover config,
-> running locally, and running in Docker.
+### Prerequisites
+
+- Node.js >= 22
+
+### Configure
+
+Copy the example config and point it at your upstream. Secrets are referenced
+as `${ENV_VAR}` and resolved from the environment, so the config file itself
+stays free of keys:
+
+```bash
+cp config.example.json config.json
+export OPENAI_API_KEY=sk-...      # referenced by config.json via ${OPENAI_API_KEY}
+```
+
+Config fields:
+
+| Field                 | Description                                                              |
+| --------------------- | ------------------------------------------------------------------------ |
+| `listen`              | `{ host, port }` the proxy binds to.                                     |
+| `upstream`            | Base URL of the OpenAI-compatible endpoint to forward to.               |
+| `upstreamApiKey`      | Fallback key used only when the agent sends no `Authorization` header. Supports `${ENV_VAR}`. |
+| `attributionHeaders`  | Map of logical name -> request header name (e.g. `agent_id -> X-Agent-Id`). CSV columns are derived from these keys. |
+| `log.filePath`        | Path to the CSV log file (created if missing, header written on creation). |
+| `tokenizer.model`     | Model hint for the local tokenizer fallback (used when upstream omits `usage`). |
+
+The config is hot-reloaded on change (no restart needed). Changing `listen`
+requires a restart; everything else (upstream, keys, attribution headers, log
+path) is picked up live.
+
+### Run locally
+
+```bash
+npm install
+npm run dev      # tsx watch (auto-restart on code changes)
+# or
+npm run build && npm start
+```
+
+Point your agents at `http://127.0.0.1:8080` and add the configured
+attribution headers (e.g. `X-Agent-Id`, `X-Job-Type`) to each request. The
+proxy forwards everything to the upstream and appends one CSV row per request
+to `logs/usage.csv`:
+
+```
+timestamp,agent_id,job_type,prompt_tokens,completion_tokens,total_tokens
+2026-09-13T10:58:38.819Z,agent-42,translate,12,3,15
+```
+
+`GET /health` returns `200 {"status":"ok"}`.
+
+### Run in Docker
+
+```bash
+docker build -t ai-token-proxy .
+docker run -p 8080:8080 \
+  -v "$PWD/config.json:/app/config.json:ro" \
+  -v "$PWD/logs:/app/logs" \
+  -e OPENAI_API_KEY=sk-... \
+  ai-token-proxy
+```
 
 ## Project layout
 
 ```
 .
+├── src/
+│   ├── index.ts        # entry point: load config, start server, hot-reload
+│   ├── server.ts       # HTTP server: /health + /v1/* routing
+│   ├── proxy.ts        # transparent forwarding, auth, usage extraction, logging
+│   ├── logger.ts       # CSV logger (header on creation, appends rows)
+│   ├── tokenizer.ts    # local tokenizer fallback (gpt-tokenizer) for usage estimates
+│   ├── config.ts       # JSON config load + env-var substitution + fs.watch hot-reload
+│   └── types.ts        # shared config & token-count types
 ├── docs/
-│   └── requirements.md   # full requirements specification
+│   └── requirements.md # full requirements specification
 ├── .agents/
-│   └── skills/           # opencode skills (e.g. grill-me)
-├── opencode.json         # opencode config
-└── README.md
+│   └── skills/         # opencode skills (e.g. grill-me)
+├── config.example.json # copy to config.json (gitignored)
+├── opencode.json       # opencode config
+├── package.json
+├── tsconfig.json
+└── Dockerfile
 ```
 
-When the proxy is implemented, the standard Node/TS layout will add `src/`,
-`package.json`, `tsconfig.json`, and a `Dockerfile` at the root.
+`config.json`, `logs/`, `node_modules/`, and `dist/` are gitignored.

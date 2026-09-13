@@ -1,6 +1,7 @@
 # AI Token Proxy — Requirements
 
-> Status: **v1 (prototype) — requirements gathered, implementation not yet started.**
+> Status: **v1 (prototype) — implemented.** `src/` contains the proxy;
+> `package.json`, `tsconfig.json`, and `Dockerfile` are in place.
 > Last updated: 2026-09-13
 
 ## 1. Problem Statement

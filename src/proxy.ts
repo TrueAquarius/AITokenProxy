@@ -62,7 +62,8 @@ function buildResponseHeaders(upstreamRes: Response): Record<string, string> {
 
 function buildUpstreamUrl(req: http.IncomingMessage, config: Config): URL {
   const base = config.upstream.replace(/\/+$/, '');
-  return new URL(base + (req.url ?? ''));
+  const stripped = (req.url ?? '').replace(/^\/v1(?=\/|$)/, '');
+  return new URL(base + stripped);
 }
 
 function extractAttribution(

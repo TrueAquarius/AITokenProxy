@@ -6,8 +6,9 @@ logging per-request token consumption with attribution metadata (Agent ID,
 Job Type, etc.) so the organization can analyze which agents use how many
 tokens for what purpose.
 
-> **Status:** V0.1.0 (prototype). The proxy is implemented and logs to a CSV file.
-> Requirements are captured in [`docs/requirements.md`](docs/requirements.md).
+> **Status:** V0.2.0 (in development). V0.1.0 (prototype) is released; the proxy
+> logs to a CSV file. Requirements are captured in
+> [`docs/requirements.md`](docs/requirements.md).
 
 ## Why
 
@@ -126,7 +127,7 @@ Example response:
 ```
 status version
 ------ -------
-ok     V0.1.0
+ok     V0.2.0
 ```
 
 A non-2xx response (or a connection error) means the proxy is not running —

@@ -1,7 +1,8 @@
 # AI Token Proxy — Requirements
 
-> Status: **V0.1.0 (prototype) — implemented.** `src/` contains the proxy;
-> `package.json`, `tsconfig.json`, and `Dockerfile` are in place.
+> Status: **V0.2.0 (in development).** V0.1.0 (prototype) is released — `src/`
+> contains the proxy; `package.json`, `tsconfig.json`, and `Dockerfile` are in
+> place.
 > Last updated: 2026-09-13
 
 ## 1. Problem Statement

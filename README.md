@@ -41,7 +41,8 @@ versions.
   config).
 - Auth: agent's key forwarded verbatim, with fallback to a configured upstream
   key.
-- Token counts: upstream `usage` first, local tokenizer estimate as fallback.
+- Token counts: upstream `usage` first (including the `usage` frame at the end of a streamed SSE response), local tokenizer estimate as fallback.
+- Streaming responses (SSE): streamed responses are passed through to the agent frame-by-frame in real time; the proxy tees the frames to read `usage` (or aggregate `delta.content` for the tokenizer fallback) before logging.
 - CSV log per request: `timestamp`, configured attribution fields,
   `prompt_tokens`, `completion_tokens`, `total_tokens`.
 - `/health` endpoint.
@@ -49,7 +50,7 @@ versions.
 - Packaged as a Docker container.
 
 Out of scope for v1: multiple LLM providers, cost calculation, agent
-auth/rate-limiting, streaming, tests, the database, and the web frontend.
+auth/rate-limiting, tests, the database, and the web frontend.
 
 See [`docs/requirements.md`](docs/requirements.md) for the full specification.
 

@@ -51,8 +51,13 @@ v1 delivers only part 1, in prototype form.
 - Auth handling: the agent's `Authorization` key is forwarded verbatim; if the
   agent does not provide one, the proxy falls back to an upstream API key
   configured in the JSON config.
-- Token counts: read from the upstream response's `usage` object first; if
+- Token counts: read from the upstream response's `usage` object first
+  (including the `usage` frame sent at the end of a streamed SSE response); if
   absent, estimate locally with a tokenizer.
+- Streaming responses (Server-Sent Events / SSE): streamed upstream responses
+  are passed through to the agent frame-by-frame in real time; the proxy tees
+  the frames internally to read `usage` (or aggregate `delta.content` for the
+  tokenizer fallback) before logging.
 - Error handling: upstream non-2xx responses are logged to the CSV (with token
   counts of 0) and the upstream error is passed through to the agent
   unchanged.
@@ -68,7 +73,6 @@ v1 delivers only part 1, in prototype form.
   currency is deferred).
 - Authenticating or rate-limiting agents (v1 does not authenticate callers of
   the proxy).
-- Streaming response support (Server-Sent Events / SSE).
 - Automated tests.
 - The database (replaces / augments CSV in later versions).
 - The web frontend for management and analysis.
@@ -114,7 +118,9 @@ v1 delivers only part 1, in prototype form.
 
 - **HTTP semantics:** transparent passthrough. The proxy does not terminate
   and re-serialize the body beyond what is needed to read `usage`; method,
-  headers, body, and query string are forwarded as-is.
+  headers, body, and query string are forwarded as-is. Streamed (SSE)
+  responses are forwarded frame-by-frame in real time; the proxy tees the
+  frames internally only to read `usage`.
 - **Reliability (prototype level):** errors are logged and passed through;
   the proxy should not crash on a single bad request.
 - **Config:** hot-reload on file change.

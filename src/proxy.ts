@@ -60,6 +60,110 @@ function buildResponseHeaders(upstreamRes: Response): Record<string, string> {
   return headers;
 }
 
+function writeWithBackpressure(res: http.ServerResponse, buf: Buffer): Promise<void> {
+  return new Promise((resolve) => {
+    if (res.writableEnded || res.destroyed) return resolve();
+    if (res.write(buf)) resolve();
+    else res.once('drain', () => resolve());
+  });
+}
+
+function parseSseChunks(buffer: Buffer): unknown[] {
+  const payloads: unknown[] = [];
+  for (const line of buffer.toString('utf8').split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('data:')) continue;
+    const data = trimmed.slice(5).trim();
+    if (data === '' || data === '[DONE]') continue;
+    try {
+      payloads.push(JSON.parse(data));
+    } catch {
+      // ignore malformed line
+    }
+  }
+  return payloads;
+}
+
+function extractStreamingUsage(buffer: Buffer): TokenCounts | null {
+  for (const chunk of parseSseChunks(buffer)) {
+    const usage = (chunk as { usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } }).usage;
+    if (usage && (usage.prompt_tokens || usage.completion_tokens || usage.total_tokens)) {
+      return usageToTokens(usage);
+    }
+  }
+  return null;
+}
+
+function extractStreamingCompletionText(buffer: Buffer): string {
+  const parts: string[] = [];
+  for (const chunk of parseSseChunks(buffer)) {
+    const choices = (chunk as { choices?: Array<{ delta?: { content?: string } }> }).choices;
+    if (!Array.isArray(choices)) continue;
+    for (const choice of choices) {
+      const content = choice?.delta?.content;
+      if (typeof content === 'string') parts.push(content);
+    }
+  }
+  return parts.join('');
+}
+
+async function handleStreamingResponse(
+  res: http.ServerResponse,
+  upstreamRes: Response,
+  reqJson: unknown,
+  attribution: Record<string, string>,
+  logger: CsvLogger,
+): Promise<void> {
+  const resHeaders = buildResponseHeaders(upstreamRes);
+  res.writeHead(upstreamRes.status, resHeaders);
+
+  const chunks: Buffer[] = [];
+  const body = upstreamRes.body;
+  if (!body) {
+    if (!res.writableEnded) res.end();
+    logger.log(attribution, ZERO_TOKENS);
+    return;
+  }
+  const reader = body.getReader();
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+      const buf = Buffer.from(value);
+      chunks.push(buf);
+      await writeWithBackpressure(res, buf);
+    }
+  } catch (err) {
+    console.error(`[proxy] streaming read failed: ${(err as Error).message}`);
+  } finally {
+    try {
+      reader.releaseLock();
+    } catch {
+      // already released
+    }
+  }
+  if (!res.writableEnded) res.end();
+
+  const fullBuffer = Buffer.concat(chunks);
+  let tokens: TokenCounts = ZERO_TOKENS;
+  if (upstreamRes.ok && fullBuffer.length > 0) {
+    const streamedUsage = extractStreamingUsage(fullBuffer);
+    if (streamedUsage) {
+      tokens = streamedUsage;
+    } else {
+      try {
+        const completionText = extractStreamingCompletionText(fullBuffer);
+        const pseudoRes = { choices: [{ message: { content: completionText } }] };
+        tokens = await estimateUsage(reqJson, pseudoRes);
+      } catch (err) {
+        console.error(`[proxy] tokenizer estimate failed: ${(err as Error).message}`);
+      }
+    }
+  }
+  logger.log(attribution, tokens);
+}
+
 function buildUpstreamUrl(req: http.IncomingMessage, config: Config): URL {
   const base = config.upstream.replace(/\/+$/, '');
   const stripped = (req.url ?? '').replace(/^\/v1(?=\/|$)/, '');
@@ -139,6 +243,12 @@ export async function handleProxy(
     logger.log(attribution, ZERO_TOKENS);
     res.writeHead(502, { 'content-type': 'application/json' });
     res.end(JSON.stringify({ error: { message: 'upstream unreachable', detail: message } }));
+    return;
+  }
+
+  const contentType = upstreamRes.headers.get('content-type') ?? '';
+  if (contentType.includes('text/event-stream') && upstreamRes.body) {
+    await handleStreamingResponse(res, upstreamRes, reqJson, attribution, logger);
     return;
   }
 

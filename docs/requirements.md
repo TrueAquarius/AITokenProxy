@@ -1,6 +1,6 @@
 # AI Token Proxy — Requirements
 
-> Status: **v1 (prototype) — implemented.** `src/` contains the proxy;
+> Status: **V0.1.0 (prototype) — implemented.** `src/` contains the proxy;
 > `package.json`, `tsconfig.json`, and `Dockerfile` are in place.
 > Last updated: 2026-09-13
 
@@ -34,11 +34,11 @@ The full product consists of three logical parts:
 3. **The Web Frontend** — manages the proxy and analyzes token-consumption
    data.
 
-v1 delivers only part 1, in prototype form.
+V0.1.0 delivers only part 1, in prototype form.
 
 ## 4. Scope
 
-### 4.1 In scope for v1 (prototype)
+### 4.1 In scope for V0.1.0 (prototype)
 
 - A single proxy service that forwards all `/v1/*` endpoints to one
   OpenAI-compatible upstream endpoint.
@@ -62,21 +62,22 @@ v1 delivers only part 1, in prototype form.
   counts of 0) and the upstream error is passed through to the agent
   unchanged.
 - Hot-reload of the JSON config file on change (no restart required).
-- A `/health` endpoint returning HTTP 200 when the proxy is running.
+- A `/health` endpoint returning HTTP 200 with a JSON body containing
+  `status: "ok"` and the proxy `version` when the proxy is running.
 - Packaged as a Docker container.
 - Configuration via a JSON config file.
 
-### 4.2 Out of scope for v1 (deferred to later versions)
+### 4.2 Out of scope for V0.1.0 (deferred to later versions)
 
-- Multiple LLM providers (v1 targets a single upstream endpoint).
-- Cost / pricing calculation (v1 logs token counts only; mapping tokens to
+- Multiple LLM providers (V0.1.0 targets a single upstream endpoint).
+- Cost / pricing calculation (V0.1.0 logs token counts only; mapping tokens to
   currency is deferred).
-- Authenticating or rate-limiting agents (v1 does not authenticate callers of
+- Authenticating or rate-limiting agents (V0.1.0 does not authenticate callers of
   the proxy).
 - Automated tests.
 - The database (replaces / augments CSV in later versions).
 - The web frontend for management and analysis.
-- Production hardening (v1 is a prototype).
+- Production hardening (V0.1.0 is a prototype).
 
 ## 5. Users & Interfaces
 
@@ -87,7 +88,7 @@ v1 delivers only part 1, in prototype form.
 - **Outbound interface:** forwards to an OpenAI-compatible upstream endpoint
   (any such endpoint, configured at runtime).
 - **Management surface:** JSON config file + `/health` endpoint. No web UI in
-  v1.
+  V0.1.0.
 
 ## 6. Tech Stack
 
@@ -124,7 +125,8 @@ v1 delivers only part 1, in prototype form.
 - **Reliability (prototype level):** errors are logged and passed through;
   the proxy should not crash on a single bad request.
 - **Config:** hot-reload on file change.
-- **Observability:** `/health` endpoint returning 200 when up. Console logging
+- **Observability:** `/health` endpoint returning 200 with `status: "ok"` and the
+  proxy `version` when up. Console logging
   for startup and errors is acceptable.
 - **Deployment:** Docker container.
 
@@ -132,7 +134,7 @@ v1 delivers only part 1, in prototype form.
 
 - **Timeline:** no hard deadline for the prototype.
 - **Repo layout:** standard Node/TS layout.
-- **Tests:** none in v1.
+- **Tests:** none in V0.1.0.
 - **Production hardening:** explicitly deferred. Later versions must be
   hardened for production.
 

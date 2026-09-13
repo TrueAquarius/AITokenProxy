@@ -1,6 +1,6 @@
 {
   "name": "ai-token-proxy",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Proxy between AI Agents and LLMs that logs per-request token consumption with attribution metadata.",
   "license": "MIT",
   "type": "module",

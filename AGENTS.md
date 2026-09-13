@@ -5,7 +5,7 @@ Guidance for AI agents (and humans) working in this repository.
 ## Project
 
 **AI Token Proxy** — a proxy between AI Agents and LLMs that logs per-request
-token consumption with attribution metadata. v1 is a prototype: the proxy
+token consumption with attribution metadata. V0.1.0 is a prototype: the proxy
 forwards OpenAI-compatible requests to an upstream LLM, reads attribution
 headers, and logs token usage to a CSV file. The database and web frontend are
 deferred to later versions.
@@ -16,7 +16,7 @@ requirements change.
 
 ## Current state
 
-- The v1 proxy is **implemented** in `src/` (Node.js + TypeScript) with a
+- The V0.1.0 proxy is **implemented** in `src/` (Node.js + TypeScript) with a
   `package.json`, `tsconfig.json`, and `Dockerfile`.
 - Requirements are captured in `docs/requirements.md`.
 - opencode is configured via `opencode.json`; skills live under
@@ -29,14 +29,14 @@ requirements change.
 - JSON config (hot-reloaded)
 - CSV log output
 
-## When implementing v1
+## When implementing V0.1.0
 
 - Use standard Node/TS layout: `src/`, `package.json`, `tsconfig.json`,
   `Dockerfile`.
-- Do not add tests in v1 (explicitly out of scope). Add them in a later
+- Do not add tests in V0.1.0 (explicitly out of scope). Add them in a later
   version.
 - Do not add a database, web frontend, streaming, multi-provider support, or
-  cost calculation — these are explicitly out of scope for v1. Keep the
+  cost calculation — these are explicitly out of scope for V0.1.0. Keep the
   prototype focused.
 - Transparent passthrough: forward method, headers, body, and query string
   as-is; return the upstream response unchanged. Only read `usage` from the
@@ -49,7 +49,8 @@ requirements change.
 - Errors: log to the CSV with token counts of 0 and pass the upstream error
   through unchanged.
 - Hot-reload the JSON config on file change.
-- Provide a `/health` endpoint returning 200.
+- Provide a `/health` endpoint returning 200 with `status: "ok"` and the proxy
+  `version` (see `src/version.ts`).
 
 ## Conventions
 

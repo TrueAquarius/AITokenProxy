@@ -6,7 +6,7 @@ logging per-request token consumption with attribution metadata (Agent ID,
 Job Type, etc.) so the organization can analyze which agents use how many
 tokens for what purpose.
 
-> **Status:** v1 (prototype). The proxy is implemented and logs to a CSV file.
+> **Status:** V0.1.0 (prototype). The proxy is implemented and logs to a CSV file.
 > Requirements are captured in [`docs/requirements.md`](docs/requirements.md).
 
 ## Why
@@ -23,16 +23,16 @@ token usage returned by the upstream LLM.
 The full product has three logical parts:
 
 1. **The Proxy** — forwards OpenAI-compatible requests and logs attribution +
-   token usage. *(v1 delivers this.)*
+   token usage. *(V0.1.0 delivers this.)*
 2. **The Database** — persists the logged data. *(later)*
 3. **The Web Frontend** — manages the proxy and analyzes token consumption.
    *(later)*
 
-v1 is a prototype of part 1 only: the proxy logs to a CSV file and is
+V0.1.0 is a prototype of part 1 only: the proxy logs to a CSV file and is
 configured via a JSON file. The database and web frontend come in later
 versions.
 
-## v1 scope
+## V0.1.0 scope
 
 - Forwards all `/v1/*` endpoints to a single OpenAI-compatible upstream.
 - Transparent passthrough (method, headers, body, query string forwarded
@@ -49,7 +49,7 @@ versions.
 - Hot-reload of JSON config on file change.
 - Packaged as a Docker container.
 
-Out of scope for v1: multiple LLM providers, cost calculation, agent
+Out of scope for V0.1.0: multiple LLM providers, cost calculation, agent
 auth/rate-limiting, tests, the database, and the web frontend.
 
 See [`docs/requirements.md`](docs/requirements.md) for the full specification.
@@ -124,9 +124,9 @@ Invoke-RestMethod -Uri http://localhost:8080/health -Method Get
 Example response:
 
 ```
-status
-------
-ok
+status version
+------ -------
+ok     V0.1.0
 ```
 
 A non-2xx response (or a connection error) means the proxy is not running —
@@ -172,7 +172,8 @@ docker run -p 8080:8080 \
 │   ├── logger.ts       # CSV logger (header on creation, appends rows)
 │   ├── tokenizer.ts    # local tokenizer fallback (gpt-tokenizer) for usage estimates
 │   ├── config.ts       # JSON config load + env-var substitution + fs.watch hot-reload
-│   └── types.ts        # shared config & token-count types
+│   ├── types.ts        # shared config & token-count types
+│   └── version.ts      # proxy version string (single source of truth; surfaced via /health)
 ├── docs/
 │   └── requirements.md # full requirements specification
 ├── .agents/

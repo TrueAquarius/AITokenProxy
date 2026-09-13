@@ -2,6 +2,7 @@ import http from 'http';
 import type { Config } from './types.js';
 import { CsvLogger } from './logger.js';
 import { handleProxy } from './proxy.js';
+import { VERSION } from './version.js';
 
 export function createServer(getConfig: () => Config, logger: CsvLogger): http.Server {
   const server = http.createServer(async (req, res) => {
@@ -9,7 +10,7 @@ export function createServer(getConfig: () => Config, logger: CsvLogger): http.S
 
     if (requestPath === '/health') {
       res.writeHead(200, { 'content-type': 'application/json' });
-      res.end(JSON.stringify({ status: 'ok' }));
+      res.end(JSON.stringify({ status: 'ok', version: VERSION }));
       return;
     }
 
